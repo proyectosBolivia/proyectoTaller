@@ -932,3 +932,13 @@ tbody tr:hover {
         /* Full width on mobile when open */
     }
 }
+
+.direccion {
+    display: flex;
+}
+
+.direccion div {
+    width: 50%;
+    text-align: left;
+    justify-items: center;
+}

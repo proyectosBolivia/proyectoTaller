@@ -47,37 +47,40 @@ if (isAuthenticated()) {
             <h2>Nuestros Servicios</h2>
             <div class="services-grid">
                 <div class="service-card">
-                    <div class="service-icon">🛢️</div>
+                    <div class="service-icon"><img src="assets/img/aceita.png" alt="error de carga" width="100"></div>
                     <h3>Cambio de Aceite</h3>
                     <p>Mantenimiento preventivo para el motor de tu vehículo</p>
                     <span class="price">Desde Bs. 250</span>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">⚙️</div>
+                    <div class="service-icon"><img src="assets/img/afinacion.png" alt="error de carga" width="100">
+                    </div>
                     <h3>Afinación</h3>
                     <p>Afinación completa para el óptimo rendimiento</p>
                     <span class="price">Desde Bs. 1,500</span>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">🛑</div>
+                    <div class="service-icon"><img src="assets/img/freno.png" alt="error de carga" width="100"></div>
                     <h3>Sistema de Frenos</h3>
                     <p>Reparación y mantenimiento de frenos</p>
                     <span class="price">Desde Bs. 2,000</span>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">🔧</div>
+                    <div class="service-icon"><img src="assets/img/suspension.png" alt="error de carga" width="100">
+                    </div>
                     <h3>Suspensión</h3>
                     <p>Reparación completa del sistema de suspensión</p>
                     <span class="price">Desde Bs. 2,500</span>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">❄️</div>
+                    <div class="service-icon"><img src="assets/img/aire.png" alt="error de carga" width="100"></div>
                     <h3>Aire Acondicionado</h3>
                     <p>Recarga y reparación de sistemas de A/C</p>
                     <span class="price">Desde Bs. 800</span>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">🔍</div>
+                    <div class="service-icon"><img src="assets/img/diagnostico.png" alt="error de carga" width="100">
+                    </div>
                     <h3>Diagnóstico</h3>
                     <p>Revisión completa y diagnóstico electrónico</p>
                     <span class="price">Desde Bs. 500</span>
@@ -91,22 +94,30 @@ if (isAuthenticated()) {
             <h2>¿Por qué elegirnos?</h2>
             <div class="features-grid">
                 <div class="feature-item">
-                    <div class="feature-icon">👨‍🔧</div>
+                    <div class="feature-icon">
+                        <img src="assets/img/mecanico.png" alt="" width="100px">
+                    </div>
                     <h3>Mecánicos Certificados</h3>
                     <p>Personal altamente capacitado y con experiencia</p>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">⏱️</div>
+                    <div class="feature-icon">
+                        <img src="assets/img/servicio.png" alt="" width="100px">
+                    </div>
                     <h3>Servicio Rápido</h3>
                     <p>Respetamos los tiempos de entrega acordados</p>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">💰</div>
+                    <div class="feature-icon">
+                        <img src="assets/img/costo.png" alt="" width="100px">
+                    </div>
                     <h3>Precios Justos</h3>
                     <p>Cotizaciones transparentes y competitivas</p>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">✅</div>
+                    <div class="feature-icon">
+                        <img src="assets/img/garantia.png" alt="" width="100px">
+                    </div>
                     <h3>Garantía</h3>
                     <p>Todos nuestros trabajos están garantizados</p>
                 </div>
@@ -123,10 +134,19 @@ if (isAuthenticated()) {
     </section>
 
     <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Taller Mecánico Pro. Todos los derechos reservados.</p>
-            <p>Contacto: info@tallerpro.com | Tel: 555-0000</p>
+        <div class="direccion">
+            <div>
+                <p>
+                    Dirección: Calle Jose Eguivar #138, Z. Villa Fatima <br>
+                    Teléfono: 70112715 <br>
+                    Email: lcarcy@gmail.com<br>
+                </p>
+            </div>
+            <div>
+                <img src="assets/img/direccion.png" alt="error de carga" width="500">
+            </div>
         </div>
+        <p>&copy; 2026 - Taller mecánico LECARCY</p>
     </footer>
 </body>
 
