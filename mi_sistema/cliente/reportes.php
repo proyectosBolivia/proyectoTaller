@@ -1,17 +1,17 @@
 <?php
 require_once '../config.php';
-requireAuth(['trabajador']);
+requireAuth(['cliente']);
 
 $db = Database::getInstance()->getConnection();
 
 // --- Parámetros de búsqueda ---
 $busqueda = trim($_GET['busqueda'] ?? '');
-$tipo_busqueda = $_GET['tipo_busqueda'] ?? 'nombre'; // 'nombre' | 'id'
+$tipo_busqueda = $_GET['tipo_busqueda'] ?? 'placa'; // 'placa' | 'id'
 $fecha_desde = $_GET['fecha_desde'] ?? '';
 $fecha_hasta = $_GET['fecha_hasta'] ?? '';
 
 // Construcción dinámica de la consulta
-$where = ['rt.trabajador_id = ?'];
+$where = ['s.cliente_id = ?'];
 $params = [$_SESSION['usuario_id']];
 
 if ($busqueda !== '') {
@@ -20,7 +20,7 @@ if ($busqueda !== '') {
         $params[] = (int)$busqueda;
     }
     else {
-        $where[] = 'c.nombre LIKE ?';
+        $where[] = 's.placa_vehiculo LIKE ?';
         $params[] = '%' . $busqueda . '%';
     }
 }
@@ -37,25 +37,27 @@ if ($fecha_hasta !== '') {
 $whereSQL = implode(' AND ', $where);
 
 $stmt = $db->prepare("
-    SELECT rt.*, a.solicitud_id, s.placa_vehiculo, c.nombre as cliente_nombre
+    SELECT rt.*, u.nombre as trabajador_nombre, s.placa_vehiculo, s.descripcion as solicitud_descripcion
     FROM reportes_trabajo rt
-    INNER JOIN asignaciones a ON rt.asignacion_id = a.id
-    INNER JOIN solicitudes s ON a.solicitud_id = s.id
-    INNER JOIN usuarios c ON s.cliente_id = c.id
+    INNER JOIN asignaciones a  ON rt.asignacion_id = a.id
+    INNER JOIN solicitudes  s  ON a.solicitud_id = s.id
+    INNER JOIN usuarios     u  ON rt.trabajador_id = u.id
     WHERE $whereSQL
     ORDER BY rt.fecha_reporte DESC
 ");
 $stmt->execute($params);
 $reportes = $stmt->fetchAll();
 
-// Estadísticas (siempre sobre el trabajador completo)
+// Estadísticas del cliente
 $stmt = $db->prepare("
-    SELECT 
-        COUNT(*) as total_reportes,
-        SUM(horas_trabajadas) as total_horas,
-        SUM(costo_total) as total_ingresos
-    FROM reportes_trabajo
-    WHERE trabajador_id = ?
+    SELECT
+        COUNT(DISTINCT rt.id)   as total_reportes,
+        SUM(rt.horas_trabajadas) as total_horas,
+        SUM(rt.costo_total)      as total_gastado
+    FROM reportes_trabajo rt
+    INNER JOIN asignaciones a ON rt.asignacion_id = a.id
+    INNER JOIN solicitudes  s ON a.solicitud_id = s.id
+    WHERE s.cliente_id = ?
 ");
 $stmt->execute([$_SESSION['usuario_id']]);
 $stats = $stmt->fetch();
@@ -66,7 +68,7 @@ $stats = $stmt->fetch();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Reportes - Trabajador</title>
+    <title>Mis Reportes - Cliente</title>
     <link rel="stylesheet" href="../assets/css/styles.css">
     <style>
         /* ── Buscador ─────────────────────────────────────────── */
@@ -75,7 +77,7 @@ $stats = $stmt->fetch();
             border: 1px solid var(--border-color, #e0e0e0);
             border-radius: 12px;
             padding: 1.25rem 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
@@ -113,9 +115,7 @@ $stats = $stmt->fetch();
             overflow: hidden;
         }
 
-        .search-type-toggle input[type="radio"] {
-            display: none;
-        }
+        .search-type-toggle input[type="radio"] { display: none; }
 
         .search-type-toggle label {
             flex: 1;
@@ -184,8 +184,7 @@ $stats = $stmt->fetch();
             white-space: nowrap;
         }
 
-        .btn-search,
-        .btn-clear {
+        .btn-search, .btn-clear {
             padding: .55rem 1.1rem;
             border-radius: 8px;
             border: none;
@@ -196,16 +195,8 @@ $stats = $stmt->fetch();
             white-space: nowrap;
         }
 
-        .btn-search {
-            background: var(--primary-color, #3b82f6);
-            color: #fff;
-        }
-
-        .btn-clear {
-            background: var(--bg-tertiary, #e5e7eb);
-            color: var(--text-primary, #333);
-        }
-
+        .btn-search { background: var(--primary-color, #3b82f6); color: #fff; }
+        .btn-clear  { background: var(--bg-tertiary, #e5e7eb); color: var(--text-primary, #333); }
         .btn-search:hover, .btn-clear:hover { opacity: .85; }
 
         .search-results-info {
@@ -239,30 +230,31 @@ $stats = $stmt->fetch();
 
         <main class="main-content">
             <header class="content-header">
-                <h1>Mis Reportes de Trabajo</h1>
+                <h1>Mis Reportes de Servicio</h1>
                 <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button>
             </header>
 
+            <!-- Estadísticas -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">📝</div>
                     <div class="stat-details">
-                        <h3><?php echo $stats['total_reportes']; ?></h3>
-                        <p>Reportes Creados</p>
+                        <h3><?php echo $stats['total_reportes'] ?? 0; ?></h3>
+                        <p>Reportes Recibidos</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">⏱️</div>
                     <div class="stat-details">
-                        <h3><?php echo number_format($stats['total_horas'], 1); ?>h</h3>
-                        <p>Horas Trabajadas</p>
+                        <h3><?php echo number_format($stats['total_horas'] ?? 0, 1); ?>h</h3>
+                        <p>Horas de Servicio</p>
                     </div>
                 </div>
-                <div class="stat-card stat-success">
-                    <div class="stat-icon">💰</div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">💳</div>
                     <div class="stat-details">
-                        <h3><?php echo formatCurrency($stats['total_ingresos']); ?></h3>
-                        <p>Ingresos Generados</p>
+                        <h3><?php echo formatCurrency($stats['total_gastado'] ?? 0); ?></h3>
+                        <p>Total Gastado</p>
                     </div>
                 </div>
             </div>
@@ -274,13 +266,13 @@ $stats = $stmt->fetch();
                     <div class="search-panel">
                         <h3>🔍 Buscar Reportes</h3>
 
-                        <!-- Selector de tipo (nombre | ID) -->
+                        <!-- Toggle placa / ID -->
                         <div class="search-group" style="flex:0 1 auto;">
                             <label>Buscar por</label>
                             <div class="search-type-toggle">
-                                <input type="radio" name="tipo_busqueda" id="tipo_nombre" value="nombre"
-                                    <?php echo($tipo_busqueda === 'nombre') ? 'checked' : ''; ?>>
-                                <label for="tipo_nombre">Nombre</label>
+                                <input type="radio" name="tipo_busqueda" id="tipo_placa" value="placa"
+                                    <?php echo($tipo_busqueda === 'placa') ? 'checked' : ''; ?>>
+                                <label for="tipo_placa">Placa</label>
 
                                 <input type="radio" name="tipo_busqueda" id="tipo_id" value="id"
                                     <?php echo($tipo_busqueda === 'id') ? 'checked' : ''; ?>>
@@ -288,16 +280,16 @@ $stats = $stmt->fetch();
                             </div>
                         </div>
 
-                        <!-- Campo de búsqueda -->
+                        <!-- Campo de texto -->
                         <div class="search-group" style="flex:2 1 200px;">
                             <label id="labelBusqueda">
-                                <?php echo($tipo_busqueda === 'id') ? 'ID del reporte' : 'Nombre del trabajador/cliente'; ?>
+                                <?php echo($tipo_busqueda === 'id') ? 'ID del reporte' : 'Placa del vehículo'; ?>
                             </label>
                             <div class="search-input-wrap">
                                 <span>🔎</span>
                                 <input type="text" name="busqueda" id="campoBusqueda"
                                     value="<?php echo htmlspecialchars($busqueda); ?>"
-                                    placeholder="<?php echo($tipo_busqueda === 'id') ? 'Ej: 42' : 'Ej: Juan Pérez'; ?>">
+                                    placeholder="<?php echo($tipo_busqueda === 'id') ? 'Ej: 42' : 'Ej: ABC-1234'; ?>">
                             </div>
                         </div>
 
@@ -306,12 +298,10 @@ $stats = $stmt->fetch();
                             <label>Rango de fechas</label>
                             <div class="date-range-group">
                                 <input type="date" name="fecha_desde" id="fecha_desde"
-                                    value="<?php echo htmlspecialchars($fecha_desde); ?>"
-                                    title="Desde">
+                                    value="<?php echo htmlspecialchars($fecha_desde); ?>" title="Desde">
                                 <span>→</span>
                                 <input type="date" name="fecha_hasta" id="fecha_hasta"
-                                    value="<?php echo htmlspecialchars($fecha_hasta); ?>"
-                                    title="Hasta">
+                                    value="<?php echo htmlspecialchars($fecha_hasta); ?>" title="Hasta">
                             </div>
                         </div>
 
@@ -330,7 +320,7 @@ if ($hayFiltros): ?>
                     <span class="search-results-info">
                         <?php echo count($reportes); ?> resultado(s) encontrado(s)
                         <?php if ($busqueda !== ''): ?>
-                            · <?php echo $tipo_busqueda === 'id' ? 'ID' : 'Nombre'; ?>: <strong><?php echo htmlspecialchars($busqueda); ?></strong>
+                            · <?php echo $tipo_busqueda === 'id' ? 'ID' : 'Placa'; ?>: <strong><?php echo htmlspecialchars($busqueda); ?></strong>
                         <?php
     endif; ?>
                         <?php if ($fecha_desde !== '' || $fecha_hasta !== ''): ?>
@@ -346,8 +336,8 @@ endif; ?>
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Cliente</th>
                                 <th>Vehículo</th>
+                                <th>Trabajador</th>
                                 <th>Descripción</th>
                                 <th>Horas</th>
                                 <th>Costo</th>
@@ -370,8 +360,8 @@ else: ?>
                                 <?php foreach ($reportes as $rep): ?>
                                     <tr>
                                         <td>#<?php echo $rep['id']; ?></td>
-                                        <td><?php echo htmlspecialchars($rep['cliente_nombre']); ?></td>
                                         <td><?php echo htmlspecialchars($rep['placa_vehiculo']); ?></td>
+                                        <td><?php echo htmlspecialchars($rep['trabajador_nombre']); ?></td>
                                         <td><?php echo htmlspecialchars(substr($rep['descripcion'], 0, 50)); ?>...</td>
                                         <td><?php echo $rep['horas_trabajadas']; ?>h</td>
                                         <td><?php echo formatCurrency($rep['costo_total']); ?></td>
@@ -392,6 +382,7 @@ endif; ?>
         </main>
     </div>
 
+    <!-- Modal detalle -->
     <div id="modalReporte" class="modal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -404,36 +395,33 @@ endif; ?>
     </div>
 
     <script>
-        // ── Modal de detalle ──────────────────────────────────────
-        function verReporte(reporte) {
+        // ── Modal ─────────────────────────────────────────────────
+        function verReporte(rep) {
             const html = `
                 <div class="details-grid">
-                    <div class="detail-item"><strong>ID Reporte:</strong> #${reporte.id}</div>
-                    <div class="detail-item"><strong>Cliente:</strong> ${reporte.cliente_nombre}</div>
-                    <div class="detail-item"><strong>Vehículo:</strong> ${reporte.placa_vehiculo}</div>
-                    <div class="detail-item"><strong>Horas Trabajadas:</strong> ${reporte.horas_trabajadas}h</div>
-                    <div class="detail-item"><strong>Costo Total:</strong> Bs. ${parseFloat(reporte.costo_total).toFixed(2)}</div>
-                    <div class="detail-item"><strong>Fecha Reporte:</strong> ${new Date(reporte.fecha_reporte).toLocaleString()}</div>
+                    <div class="detail-item"><strong>ID Reporte:</strong> #${rep.id}</div>
+                    <div class="detail-item"><strong>Vehículo:</strong> ${rep.placa_vehiculo}</div>
+                    <div class="detail-item"><strong>Trabajador:</strong> ${rep.trabajador_nombre}</div>
+                    <div class="detail-item"><strong>Horas Trabajadas:</strong> ${rep.horas_trabajadas}h</div>
+                    <div class="detail-item"><strong>Costo Total:</strong> Bs. ${parseFloat(rep.costo_total).toFixed(2)}</div>
+                    <div class="detail-item"><strong>Fecha Reporte:</strong> ${new Date(rep.fecha_reporte).toLocaleString()}</div>
                     <div class="detail-item full-width">
-                        <strong>Descripción del Trabajo:</strong><br>
-                        ${reporte.descripcion}
+                        <strong>Descripción del Trabajo:</strong><br>${rep.descripcion}
                     </div>
                     <div class="detail-item full-width">
-                        <strong>Piezas Utilizadas:</strong><br>
-                        ${reporte.piezas_utilizadas || 'Ninguna'}
+                        <strong>Piezas Utilizadas:</strong><br>${rep.piezas_utilizadas || 'Ninguna'}
                     </div>
-                </div>
-            `;
+                </div>`;
             document.getElementById('contenidoReporte').innerHTML = html;
             document.getElementById('modalReporte').style.display = 'block';
         }
 
-        window.onclick = function (event) {
-            const modal = document.getElementById('modalReporte');
-            if (event.target === modal) modal.style.display = 'none';
-        }
+        window.onclick = function (e) {
+            const m = document.getElementById('modalReporte');
+            if (e.target === m) m.style.display = 'none';
+        };
 
-        // ── Buscador: actualizar placeholder y label según tipo ───
+        // ── Toggle placa / ID ─────────────────────────────────────
         const radios = document.querySelectorAll('input[name="tipo_busqueda"]');
         const campo  = document.getElementById('campoBusqueda');
         const label  = document.getElementById('labelBusqueda');
@@ -446,8 +434,8 @@ endif; ?>
                     campo.type = 'number';
                     campo.min  = '1';
                 } else {
-                    campo.placeholder = 'Ej: Juan Pérez';
-                    label.textContent = 'Nombre del cliente';
+                    campo.placeholder = 'Ej: ABC-1234';
+                    label.textContent = 'Placa del vehículo';
                     campo.type = 'text';
                     campo.removeAttribute('min');
                 }
@@ -456,27 +444,25 @@ endif; ?>
             });
         });
 
-        // Tipo inicial
-        const tipoActual = document.querySelector('input[name="tipo_busqueda"]:checked')?.value;
-        if (tipoActual === 'id') {
+        if (document.querySelector('input[name="tipo_busqueda"]:checked')?.value === 'id') {
             campo.type = 'number';
             campo.min  = '1';
         }
 
-        // ── Limpiar filtros ───────────────────────────────────────
+        // ── Limpiar ───────────────────────────────────────────────
         function limpiarFiltros() {
-            document.getElementById('campoBusqueda').value = '';
-            document.getElementById('fecha_desde').value   = '';
-            document.getElementById('fecha_hasta').value   = '';
-            document.getElementById('tipo_nombre').checked = true;
-            campo.placeholder = 'Ej: Juan Pérez';
-            label.textContent = 'Nombre del cliente';
+            campo.value = '';
+            document.getElementById('fecha_desde').value = '';
+            document.getElementById('fecha_hasta').value = '';
+            document.getElementById('tipo_placa').checked = true;
+            campo.placeholder = 'Ej: ABC-1234';
+            label.textContent = 'Placa del vehículo';
             campo.type = 'text';
             campo.removeAttribute('min');
             document.getElementById('formBusqueda').submit();
         }
 
-        // ── Validar que fecha_desde <= fecha_hasta ────────────────
+        // ── Validar fechas ────────────────────────────────────────
         document.getElementById('formBusqueda').addEventListener('submit', function (e) {
             const desde = document.getElementById('fecha_desde').value;
             const hasta = document.getElementById('fecha_hasta').value;

@@ -6,7 +6,7 @@ define('DB_PASS', '');
 define('DB_NAME', 'taller_mecanico');
 
 // Configuración de la aplicación
-define('BASE_URL', 'http://localhost/ejemplo1/');
+define('BASE_URL', 'http://localhost/mi_sistema/');
 define('SITE_NAME', 'Sistema de Taller Mecánico');
 
 // Zona horaria

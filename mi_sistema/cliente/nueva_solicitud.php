@@ -41,7 +41,8 @@ $servicios = $db->query("SELECT * FROM servicios ORDER BY nombre ASC")->fetchAll
                                         data-descripcion="<?php echo htmlspecialchars($serv['descripcion']); ?>">
                                         <?php echo htmlspecialchars($serv['nombre']); ?>
                                     </option>
-                                <?php endforeach; ?>
+                                <?php
+endforeach; ?>
                             </select>
                             <div id="infoServicio" class="info-box" style="display: none;"></div>
                         </div>
@@ -54,7 +55,8 @@ $servicios = $db->query("SELECT * FROM servicios ORDER BY nombre ASC")->fetchAll
                                     <option value="<?php echo $tipo['id']; ?>">
                                         <?php echo htmlspecialchars($tipo['nombre']); ?>
                                     </option>
-                                <?php endforeach; ?>
+                                <?php
+endforeach; ?>
                             </select>
                         </div>
 
